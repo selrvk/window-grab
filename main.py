@@ -35,6 +35,11 @@ while True:
 
     recognition_result = recognizer.recognize(mp_image)
 
+    #for data structure breakdown
+    if recognition_result.gestures:
+      top_gesture = recognition_result.gestures[0][0]
+      print(f"Gesture: {top_gesture.category_name} - Score: {top_gesture.score:.2f}")
+
     if recognition_result.hand_landmarks:
         annotated_image = draw_gestures_on_image(rgb, recognition_result)
     else:
