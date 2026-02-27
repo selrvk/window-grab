@@ -3,8 +3,17 @@ import mediapipe as mp
 import numpy as np
 import math
 import cv2
-
 from matplotlib import pyplot as plt
+
+HAND_CONNECTIONS = [
+    (0,1),(1,2),(2,3),(3,4),
+    (0,5),(5,6),(6,7),(7,8),
+    (5,9),(9,10),(10,11),(11,12),
+    (9,13),(13,14),(14,15),(15,16),
+    (13,17),(17,18),(18,19),(19,20),
+    (0,17)
+]
+
 
 plt.rcParams.update({
     'axes.spines.top': False,
@@ -27,32 +36,45 @@ mp_drawing_styles = mp.tasks.vision.drawing_styles
 
 def draw_gestures_on_image(rgb_image, recognition_result):
     annotated_image = np.copy(rgb_image)
-    
+    height, width, _ = annotated_image.shape
+
     gesture_list = recognition_result.gestures
     hand_landmarks_list = recognition_result.hand_landmarks
-    
+
     for idx in range(len(hand_landmarks_list)):
-
         hand_landmarks = hand_landmarks_list[idx]
-        mp_drawing.draw_landmarks(
-            annotated_image,
-            hand_landmarks,
-            mp_hands.HAND_CONNECTIONS,
-            mp_drawing_styles.get_default_hand_landmarks_style(),
-            mp_drawing_styles.get_default_hand_connections_style())
 
-        if gesture_list:
+        # draw connections
+        for start, end in HAND_CONNECTIONS:
+            x0 = int(hand_landmarks[start].x * width)
+            y0 = int(hand_landmarks[start].y * height)
+            x1 = int(hand_landmarks[end].x * width)
+            y1 = int(hand_landmarks[end].y * height)
+            cv2.line(annotated_image, (x0, y0), (x1, y1), (0, 200, 255), 2)
+
+        # draw landmark dots
+        for lm in hand_landmarks:
+            cx = int(lm.x * width)
+            cy = int(lm.y * height)
+            cv2.circle(annotated_image, (cx, cy), 5, (255, 255, 255), -1)
+            cv2.circle(annotated_image, (cx, cy), 5, (0, 150, 255), 2)
+
+        # draw gesture label
+        if gesture_list and idx < len(gesture_list):
             gesture = gesture_list[idx][0]
             title = f"{gesture.category_name} ({gesture.score:.2f})"
-            
-            height, width, _ = annotated_image.shape
+
             x_text = int(hand_landmarks[0].x * width)
             y_text = int(hand_landmarks[0].y * height) - 20
-            
-            cv2.putText(annotated_image, title, (x_text, y_text), 
+
+            x_text = max(0, min(x_text, width - 200))
+            y_text = max(20, min(y_text, height - 10))
+
+            cv2.putText(annotated_image, title, (x_text, y_text),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     return annotated_image
+
 
 def draw_landmarks_on_image(rgb_image, detection_result):
   
